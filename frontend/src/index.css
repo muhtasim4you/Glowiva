@@ -1,0 +1,368 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import "~slick-carousel/slick/slick.css";
+@import "~slick-carousel/slick/slick-theme.css";
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #e91e63;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d81b60;
+}
+
+/* Button hover effects */
+.btn-primary {
+  @apply bg-primary-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-primary-600 transition-all duration-300;
+}
+
+.btn-secondary {
+  @apply bg-white text-primary-500 border-2 border-primary-500 px-6 py-3 rounded-lg font-semibold hover:bg-primary-50 transition-all duration-300;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300;
+}
+
+/* Product card hover effect */
+.product-card {
+  @apply relative overflow-hidden rounded-lg bg-white shadow-md hover:shadow-2xl transition-all duration-300 cursor-pointer;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+}
+
+/* Input styles */
+.input-field {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+}
+
+/* Loading spinner */
+.spinner {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #e91e63;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Badge styles */
+.badge-discount {
+  @apply absolute top-2 left-2 bg-primary-500 text-white px-3 py-1 rounded-full text-sm font-bold z-10;
+}
+
+.badge-new {
+  @apply absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold z-10;
+}
+
+/* Star rating */
+.star-rating {
+  color: #ffc107;
+}
+
+/* Sticky header */
+.sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Social media icons */
+.social-icon {
+  @apply w-10 h-10 flex items-center justify-center rounded-full transition-all duration-300;
+}
+
+.social-icon-facebook {
+  @apply bg-blue-600 text-white hover:bg-blue-700;
+}
+
+.social-icon-instagram {
+  @apply bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600;
+}
+
+.social-icon-youtube {
+  @apply bg-red-600 text-white hover:bg-red-700;
+}
+
+.social-icon-whatsapp {
+  @apply bg-green-500 text-white hover:bg-green-600;
+}
+
+.social-icon-tiktok {
+  @apply bg-black text-white hover:bg-gray-800;
+}
+
+/* Toast notifications */
+.Toastify__toast {
+  font-family: 'Inter', sans-serif;
+  border-radius: 8px;
+}
+
+.Toastify__toast--success {
+  background-color: #10b981;
+}
+
+.Toastify__toast--error {
+  background-color: #ef4444;
+}
+
+/* Category icons */
+.category-icon {
+  @apply w-24 h-24 rounded-full mx-auto mb-4 overflow-hidden border-4 border-primary-200 hover:border-primary-500 transition-all duration-300;
+}
+
+/* Compare table */
+.compare-table {
+  @apply w-full border-collapse;
+}
+
+.compare-table th,
+.compare-table td {
+  @apply border border-gray-200 px-4 py-3;
+}
+
+.compare-table th {
+  @apply bg-gray-100 font-semibold;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+  .hide-mobile {
+    display: none;
+  }
+
+  /* Add padding to main content to account for bottom navigation */
+  main {
+    padding-bottom: 60px;
+  }
+
+  /* Make container padding smaller on mobile */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  /* Reduce font sizes on mobile */
+  h1 {
+    font-size: 1.75rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  h3 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .show-mobile {
+    display: none;
+  }
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari, Opera */
+}
+
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Touch-friendly buttons on mobile */
+@media (max-width: 768px) {
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* Bottom navigation safe area for notched devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .bottom-nav-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Improved line clamp for multiple lines */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Mobile menu overlay animation */
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.mobile-menu {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Mobile submenu expansion animation */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 1000px;
+  }
+}
+
+.mobile-submenu {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Banner slider */
+.hero-section .slick-slider {
+  margin-bottom: 0 !important;
+}
+
+.hero-section .slick-list,
+.hero-section .slick-track,
+.hero-section .slick-slide > div {
+  height: 100%;
+}
+
+/* Crisp banner images */
+.hero-section img {
+  image-rendering: -webkit-optimize-contrast;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Banner dots */
+.hero-section .slick-dots {
+  bottom: 40px !important;
+  z-index: 20;
+}
+
+.hero-section .slick-dots li button:before {
+  font-size: 12px !important;
+  color: rgba(255,255,255,0.5) !important;
+  opacity: 1 !important;
+}
+
+.hero-section .slick-dots li.slick-active button:before {
+  color: #fff !important;
+}
+
+/* Banner arrows */
+.hero-section .slick-prev,
+.hero-section .slick-next {
+  z-index: 20;
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.hero-section .slick-prev {
+  left: 15px !important;
+}
+
+.hero-section .slick-next {
+  right: 15px !important;
+}
+
+.hero-section .slick-prev:before,
+.hero-section .slick-next:before {
+  font-size: 28px !important;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+@media (max-width: 768px) {
+  .hero-section .slick-dots {
+    bottom: 25px !important;
+  }
+
+  .hero-section .slick-dots li button:before {
+    font-size: 8px !important;
+  }
+
+  .hero-section .slick-prev,
+  .hero-section .slick-next {
+    width: 30px !important;
+    height: 30px !important;
+  }
+
+  .hero-section .slick-prev {
+    left: 8px !important;
+  }
+
+  .hero-section .slick-next {
+    right: 8px !important;
+  }
+
+  .hero-section .slick-prev:before,
+  .hero-section .slick-next:before {
+    font-size: 20px !important;
+  }
+}
