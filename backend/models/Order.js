@@ -72,8 +72,22 @@ const OrderSchema = new mongoose.Schema({
   },
   paymentStatus: {
     type: String,
-    enum: ['Pending', 'Paid', 'Failed'],
+    enum: ['Pending', 'Paid', 'Failed', 'Cancelled'],
     default: 'Pending'
+  },
+  sslcommerz: {
+    transactionId: {
+      type: String
+    },
+    validationId: {
+      type: String
+    },
+    bankTransactionId: {
+      type: String
+    },
+    cardType: {
+      type: String
+    }
   },
   orderStatus: {
     type: String,
@@ -124,7 +138,7 @@ const OrderSchema = new mongoose.Schema({
 });
 
 // Generate unique order number before saving
-OrderSchema.pre('save', async function(next) {
+OrderSchema.pre('save', async function (next) {
   if (!this.orderNumber) {
     // Generate order number: ORD + timestamp + random 4 digits
     const timestamp = Date.now().toString().slice(-8);

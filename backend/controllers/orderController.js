@@ -49,40 +49,56 @@ exports.createOrder = async (req, res) => {
     if (couponCode) {
       const coupon = await Coupon.findOne({ code: couponCode.toUpperCase() });
       if (coupon && coupon.isValid && coupon.isValid() && itemsPrice >= coupon.minPurchase) {
-        if (coupon.discountType === 'percentage') {
-          validatedDiscount = (itemsPrice * coupon.discountValue) / 100;
-          if (coupon.maxDiscount && validatedDiscount > coupon.maxDiscount) {
-            validatedDiscount = coupon.maxDiscount;
-          }
-        } else {
-          validatedDiscount = coupon.discountValue;
-        }
-        // Increment usedCount
-        await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usedCount: 1 } });
-      }
+  if (coupon.discountType === 'percentage') {
+    validatedDiscount = (itemsPrice * coupon.discountValue) / 100;
+
+    if (coupon.maxDiscount && validatedDiscount > coupon.maxDiscount) {
+      validatedDiscount = coupon.maxDiscount;
+    }
+  } else {
+    validatedDiscount = coupon.discountValue;
+  }
+
+  // Do NOT increment usedCount here.
+}
     }
 
-    // Atomically decrement stock
-    for (const item of orderItems) {
-      const updated = await Product.findOneAndUpdate(
-        { _id: item.product, stock: { $gte: item.quantity } },
-        { $inc: { stock: -item.quantity, sold: item.quantity } },
-        { new: true }
-      );
-      if (!updated) {
-        // Rollback previously decremented products
-        for (const prevItem of orderItems) {
-          if (prevItem === item) break;
-          await Product.findByIdAndUpdate(prevItem.product, {
-            $inc: { stock: prevItem.quantity, sold: -prevItem.quantity }
-          });
+// Atomically decrement stock only for Cash on Delivery
+if (paymentMethod === 'Cash on Delivery') {
+  for (const item of orderItems) {
+    const updated = await Product.findOneAndUpdate(
+      { _id: item.product, stock: { $gte: item.quantity } },
+      {
+        $inc: {
+          stock: -item.quantity,
+          sold: item.quantity
         }
-        return res.status(400).json({
-          success: false,
-          error: `Insufficient stock for product: ${item.name || item.product}`
+      },
+      { new: true }
+    );
+
+    if (!updated) {
+      // Rollback previously decremented products
+      for (const prevItem of orderItems) {
+        if (prevItem === item) break;
+
+        await Product.findByIdAndUpdate(prevItem.product, {
+          $inc: {
+            stock: prevItem.quantity,
+            sold: -prevItem.quantity
+          }
         });
       }
+
+      return res.status(400).json({
+        success: false,
+        error: `Insufficient stock for product: ${
+          item.name || item.product
+        }`
+      });
     }
+  }
+}
 
     const order = await Order.create({
       user: req.user._id,
@@ -263,17 +279,28 @@ exports.cancelOrder = async (req, res) => {
     order.cancelledAt = Date.now();
     order.cancellationReason = req.body.reason || 'Customer cancelled';
 
-    // Restore stock
-    for (const item of order.orderItems) {
-      await Product.findByIdAndUpdate(item.product, {
-        $inc: { stock: item.quantity, sold: -item.quantity }
-      });
-      // Ensure sold doesn't go negative
-      await Product.findOneAndUpdate(
-        { _id: item.product, sold: { $lt: 0 } },
-        { $set: { sold: 0 } }
-      );
-    }
+// Restore stock only if stock was previously deducted
+if (order.paymentMethod === 'Cash on Delivery') {
+  for (const item of order.orderItems) {
+    await Product.findByIdAndUpdate(item.product, {
+      $inc: {
+        stock: item.quantity,
+        sold: -item.quantity
+      }
+    });
+
+    // Ensure sold doesn't go negative
+    await Product.findOneAndUpdate(
+      {
+        _id: item.product,
+        sold: { $lt: 0 }
+      },
+      {
+        $set: { sold: 0 }
+      }
+    );
+  }
+}
 
     await order.save();
 

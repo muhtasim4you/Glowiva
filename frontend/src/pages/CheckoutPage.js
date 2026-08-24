@@ -15,6 +15,7 @@ const CheckoutPage = () => {
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponLoading, setCouponLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('Cash on Delivery');
   const [shippingMethod, setShippingMethod] = useState('80');
   const [formData, setFormData] = useState({
     fullName: user?.name || '',
@@ -58,69 +59,185 @@ const CheckoutPage = () => {
   };
 
   const handlePlaceOrder = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!isAuthenticated) {
-      toast.error('Please login to place an order');
-      navigate('/login');
-      return;
+  if (!isAuthenticated) {
+    toast.error('Please login to place an order');
+    navigate('/login');
+    return;
+  }
+
+  if (cartItems.length === 0) {
+    toast.error('Your cart is empty');
+    navigate('/cart');
+    return;
+  }
+
+  if (
+    !formData.fullName ||
+    !formData.phone ||
+    !formData.address
+  ) {
+    toast.error('Please fill in all required fields');
+    return;
+  }
+
+  try {
+    setLoading(true);
+
+    // ============================================
+    // PREPARE ORDER ITEMS
+    // ============================================
+
+    const orderItems = cartItems.map(item => ({
+      product: item._id,
+      name: item.name,
+      quantity: item.quantity,
+      price:
+        item.discountPrice > 0
+          ? item.discountPrice
+          : item.price,
+      image:
+        item.images && item.images.length > 0
+          ? item.images[0]
+          : ''
+    }));
+
+    // ============================================
+    // PREPARE ORDER DATA
+    // ============================================
+
+    const orderData = {
+      orderItems,
+
+      shippingAddress: {
+        fullName: formData.fullName,
+        phone: formData.phone,
+        email: formData.email || undefined,
+
+        address: formData.shipToDifferentAddress
+          ? formData.shippingAddress
+          : formData.address,
+
+        city: 'Dhaka',
+
+        street: formData.shipToDifferentAddress
+          ? formData.shippingAddress
+          : formData.address,
+
+        postalCode: '1000',
+
+        country: 'Bangladesh'
+      },
+
+      paymentMethod,
+
+      itemsPrice: subtotal,
+      shippingPrice: shippingCost,
+      taxPrice: 0,
+      totalPrice: total,
+
+      couponCode: appliedCoupon
+        ? appliedCoupon.code
+        : undefined,
+
+      discount: discount,
+
+      orderNotes: formData.orderNotes || undefined
+    };
+
+    // ============================================
+    // STEP 1: CREATE ORDER
+    // ============================================
+
+    const { data } = await api.post(
+      '/orders',
+      orderData
+    );
+
+    if (!data.success || !data.data?._id) {
+      throw new Error(
+        data.error || 'Failed to create order'
+      );
     }
 
-    if (cartItems.length === 0) {
-      toast.error('Your cart is empty');
-      navigate('/cart');
-      return;
-    }
+    const orderId = data.data._id;
 
-    if (!formData.fullName || !formData.phone || !formData.address) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
+    console.log('Order created:', orderId);
 
-    try {
-      setLoading(true);
+    // ============================================
+    // CASH ON DELIVERY
+    // ============================================
 
-      const orderItems = cartItems.map(item => ({
-        product: item._id,
-        name: item.name,
-        quantity: item.quantity,
-        price: item.discountPrice > 0 ? item.discountPrice : item.price,
-        image: item.images && item.images.length > 0 ? item.images[0] : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"%3E%3Crect fill="%23f0f0f0" width="100" height="100"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="14" fill="%23999"%3ENo Image%3C/text%3E%3C/svg%3E'
-      }));
-
-      const orderData = {
-        orderItems,
-        shippingAddress: {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          email: formData.email || undefined,
-          address: formData.shipToDifferentAddress ? formData.shippingAddress : formData.address,
-          city: 'Dhaka',
-          street: formData.shipToDifferentAddress ? formData.shippingAddress : formData.address,
-          postalCode: '1000'
-        },
-        paymentMethod: 'Cash on Delivery',
-        itemsPrice: subtotal,
-        shippingPrice: shippingCost,
-        taxPrice: 0,
-        totalPrice: total,
-        couponCode: appliedCoupon ? appliedCoupon.code : undefined,
-        discount: discount,
-        orderNotes: formData.orderNotes || undefined
-      };
-
-      const { data } = await api.post('/orders', orderData);
-
+    if (paymentMethod === 'Cash on Delivery') {
       toast.success('Order placed successfully!');
+
       clearCart();
-      navigate(`/order/${data.data._id}`, { state: { fromCheckout: true } });
-    } catch (error) {
-      console.error('Error placing order:', error);
-      toast.error(error.response?.data?.error || 'Failed to place order');
-    } finally {
-      setLoading(false);
+
+      navigate(`/order/${orderId}`, {
+        state: { fromCheckout: true }
+      });
+
+      return;
     }
-  };
+
+    // ============================================
+    // SSLCOMMERZ
+    // ============================================
+
+    if (paymentMethod === 'SSLCOMMERZ') {
+
+      const paymentResponse = await api.post(
+        '/payment/sslcommerz/initiate',
+        {
+          orderId: orderId
+        }
+      );
+
+      const paymentData = paymentResponse.data;
+
+      if (
+        !paymentData.success ||
+        !paymentData.GatewayPageURL
+      ) {
+        throw new Error(
+          paymentData.error ||
+          'Failed to initiate SSLCOMMERZ payment'
+        );
+      }
+
+      console.log(
+        'Redirecting to SSLCOMMERZ:',
+        paymentData.GatewayPageURL
+      );
+
+      // IMPORTANT:
+      // Do NOT clear cart here.
+      // Payment has not succeeded yet.
+
+      window.location.href =
+        paymentData.GatewayPageURL;
+
+      return;
+    }
+
+  } catch (error) {
+
+    console.error(
+      'Error placing order:',
+      error
+    );
+
+    toast.error(
+      error.response?.data?.error ||
+      error.message ||
+      'Failed to place order'
+    );
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) {
@@ -245,7 +362,7 @@ const CheckoutPage = () => {
             {/* Billing Details */}
             <div>
               <h2 className="text-2xl font-bold mb-6">BILLING DETAILS</h2>
-              
+
               <div className="space-y-4">
                 {/* Full Name */}
                 <div>
@@ -438,9 +555,50 @@ const CheckoutPage = () => {
                 </div>
 
                 {/* Payment Method */}
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold mb-2">Cash on delivery</h3>
-                  <p className="text-sm text-gray-600">Pay with cash upon delivery.</p>
+                <div className="mb-6">
+                  <h3 className="font-semibold mb-3">Payment Method</h3>
+
+                  <div className="space-y-3">
+
+                    {/* Cash on Delivery */}
+                    <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border cursor-pointer">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="Cash on Delivery"
+                        checked={paymentMethod === 'Cash on Delivery'}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="mt-1"
+                      />
+
+                      <div>
+                        <p className="font-semibold">Cash on Delivery</p>
+                        <p className="text-sm text-gray-600">
+                          Pay with cash upon delivery.
+                        </p>
+                      </div>
+                    </label>
+
+                    {/* SSLCommerz */}
+                    <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-lg border cursor-pointer">
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="SSLCOMMERZ"
+                        checked={paymentMethod === 'SSLCOMMERZ'}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="mt-1"
+                      />
+
+                      <div>
+                        <p className="font-semibold">Online Payment</p>
+                        <p className="text-sm text-gray-600">
+                          Pay securely using SSLCOMMERZ.
+                        </p>
+                      </div>
+                    </label>
+
+                  </div>
                 </div>
 
                 {/* Privacy Policy */}
@@ -456,9 +614,8 @@ const CheckoutPage = () => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-3 bg-red-600 text-white font-semibold rounded-lg transition-colors ${
-                    loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
-                  }`}
+                  className={`w-full py-3 bg-red-600 text-white font-semibold rounded-lg transition-colors ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-700'
+                    }`}
                 >
                   {loading ? 'PLACING ORDER...' : 'PLACE ORDER'}
                 </button>
