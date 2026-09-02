@@ -1,6 +1,4 @@
-# Glowivaa
-
-![Glowivaa logo](frontend/public/logo-glowiva.png)
+# Glowiva
 
 Glowivaa is a full-stack beauty and skincare e-commerce platform. Customers can browse authentic products from different brands, search by category or skin type, place orders, make payments, track deliveries, and manage their wishlist and reviews. An admin panel is included for managing products, orders, users, brands, categories, coupons, banners, and testimonials.
 
